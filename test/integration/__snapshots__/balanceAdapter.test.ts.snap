@@ -1,0 +1,76 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`execute balance endpoint should handle empty address list 1`] = `
+{
+  "error": {
+    "message": "Input, at 'addresses', must be a non-empty array of objects.",
+    "name": "AdapterError",
+  },
+  "status": "errored",
+  "statusCode": 400,
+}
+`;
+
+exports[`execute balance endpoint should handle invalid address error responses 1`] = `
+{
+  "error": {
+    "message": "Invalid Ethereum address: 0xInvalidAddress",
+    "name": "AdapterError",
+  },
+  "status": "errored",
+  "statusCode": 400,
+}
+`;
+
+exports[`execute balance endpoint should handle invalid blockheight error responses 1`] = `
+{
+  "error": {
+    "message": "Invalid blockHeight for address 0x103B66487784F6e3b4C5B2AcA92758198554C3e1: -1. It must be a non-negative integer.",
+    "name": "AdapterError",
+  },
+  "status": "errored",
+  "statusCode": 400,
+}
+`;
+
+exports[`execute balance endpoint should return success for a single address 1`] = `
+{
+  "data": {
+    "result": [
+      {
+        "address": "0x103b66487784f6e3b4c5b2aca92758198554c3e1",
+        "balance": "14.61",
+      },
+    ],
+  },
+  "result": "14.61",
+  "statusCode": 200,
+  "timestamps": {
+    "providerDataReceivedUnixMs": 978347471111,
+    "providerDataRequestedUnixMs": 978347471111,
+  },
+}
+`;
+
+exports[`execute balance endpoint should return success for multiple addresses 1`] = `
+{
+  "data": {
+    "result": [
+      {
+        "address": "0x103b66487784f6e3b4c5b2aca92758198554c3e1",
+        "balance": "14.61",
+      },
+      {
+        "address": "0x742d35cc6634c0532925a3b844bc454e4438f44e",
+        "balance": "0.78",
+      },
+    ],
+  },
+  "result": "15.40",
+  "statusCode": 200,
+  "timestamps": {
+    "providerDataReceivedUnixMs": 978347471111,
+    "providerDataRequestedUnixMs": 978347471111,
+  },
+}
+`;

@@ -1,0 +1,78 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Price Endpoint should handle empty base param 1`] = `
+{
+  "error": {
+    "message": "Input "base" cannot be empty.",
+    "name": "AdapterError",
+  },
+  "status": "errored",
+  "statusCode": 400,
+}
+`;
+
+exports[`Price Endpoint should handle empty quote param 1`] = `
+{
+  "error": {
+    "message": "Input "quote" cannot be empty.",
+    "name": "AdapterError",
+  },
+  "status": "errored",
+  "statusCode": 400,
+}
+`;
+
+exports[`Price Endpoint should handle incorrect symbols - base 1`] = `
+{
+  "errorMessage": "NoValidTradingPairs",
+  "meta": {
+    "adapterName": "WEI_ADAPTER",
+    "metrics": {
+      "feedId": "{"base":"btc1","quote":"usd"}",
+    },
+  },
+  "statusCode": 502,
+  "timestamps": {
+    "providerDataReceivedUnixMs": 2028,
+    "providerDataStreamEstablishedUnixMs": 1010,
+  },
+}
+`;
+
+exports[`Price Endpoint should handle incorrect symbols - quote 1`] = `
+{
+  "errorMessage": "NoValidTradingPairs",
+  "meta": {
+    "adapterName": "WEI_ADAPTER",
+    "metrics": {
+      "feedId": "{"base":"btc","quote":"usdh"}",
+    },
+  },
+  "statusCode": 502,
+  "timestamps": {
+    "providerDataReceivedUnixMs": 3038,
+    "providerDataStreamEstablishedUnixMs": 1010,
+  },
+}
+`;
+
+exports[`Price Endpoint should return success 1`] = `
+{
+  "data": {
+    "result": 1272.12,
+  },
+  "meta": {
+    "adapterName": "WEI_ADAPTER",
+    "metrics": {
+      "feedId": "{"base":"eth","quote":"usd"}",
+    },
+  },
+  "result": 1272.12,
+  "statusCode": 200,
+  "timestamps": {
+    "providerDataReceivedUnixMs": Any<Number>,
+    "providerDataStreamEstablishedUnixMs": Any<Number>,
+    "providerIndicatedTimeUnixMs": 1018,
+  },
+}
+`;
