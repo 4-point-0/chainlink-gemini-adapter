@@ -148,32 +148,5 @@ describe("execute", () => {
       );
       expect(response.json()).toMatchSnapshot();
     });
-
-    // it("should maintain a maximum of 10000 items", () => {
-    //   const currentRequests = new LimitedCapacitySet<string>(10000);
-
-    //   const addresses = Array.from({ length: 10100 }, (_, i) => ({
-    //     address: `0x${i.toString().padStart(40, "0")}`,
-    //   }));
-
-    //   for (const addr of addresses) {
-    //     const requestId = JSON.stringify([addr]);
-    //     currentRequests.add(requestId);
-    //   }
-
-    //   expect(Array.from(currentRequests.values()).length).toBe(10000);
-
-    //   for (let i = 0; i < 100; i++) {
-    //     const oldestAddr = `0x${i.toString().padStart(40, "0")}`;
-    //     const requestId = JSON.stringify([{ address: oldestAddr }]);
-    //     expect(currentRequests.has(requestId)).toBe(false);
-    //   }
-
-    //   for (let i = 100; i < 10100; i++) {
-    //     const newestAddr = `0x${i.toString().padStart(40, "0")}`;
-    //     const requestId = JSON.stringify([{ address: newestAddr }]);
-    //     expect(currentRequests.has(requestId)).toBe(true);
-    //   }
-    // });
   });
 });
