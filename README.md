@@ -1,4 +1,4 @@
-# CHAINLINK_ADAPTER
+# WEI_ADAPTER
 
 ![0.0.0](https://img.shields.io/github/package-json/v/smartcontractkit/external-adapters-js?filename=packages/sources/wei-adapter/package.json) ![v3](https://img.shields.io/badge/framework%20version-v3-blueviolet)
 
@@ -6,11 +6,12 @@ This document was generated automatically. Please see [README Generator](../../s
 
 ## Environment Variables
 
-| Required? |       Name       |                    Description                    |  Type  | Options | Default |
-| :-------: | :--------------: | :-----------------------------------------------: | :----: | :-----: | :-----: |
-|    ✅     | ETHEREUM_RPC_URL |         An RPC endpoint for Data Provider         | string |         |         |
-|    ✅     |     CHAIN_ID     | Chain ID for different chains that ethers accepts | number |         |         |
-|    ✅     | WS_API_ENDPOINT  |           WS endpoint for Data Provider           | string |         |         |
+| Required? |         Name          |                                        Description                                        |  Type  | Options | Default |
+| :-------: | :-------------------: | :---------------------------------------------------------------------------------------: | :----: | :-----: | :-----: |
+|    ✅     |   ETHEREUM_RPC_URL    |                             An RPC endpoint for Data Provider                             | string |         |         |
+|    ✅     |       CHAIN_ID        |                     Chain ID for different chains that ethers accepts                     | number |         |         |
+|    ✅     |    WS_API_ENDPOINT    |                               WS endpoint for Data Provider                               | string |         |         |
+|    ✅     | BACKGROUND_EXECUTE_MS | The amount of time the background execute should sleep before performing the next request | number |         |         |
 
 ---
 

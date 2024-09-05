@@ -43,6 +43,12 @@ exports[`execute balance endpoint should return success for a single address 1`]
       },
     ],
   },
+  "meta": {
+    "adapterName": "WEI_ADAPTER",
+    "metrics": {
+      "feedId": "{"addresses":[{"address":"0x103b66487784f6e3b4c5b2aca92758198554c3e1"}]}",
+    },
+  },
   "result": "14.61",
   "statusCode": 200,
   "timestamps": {
@@ -65,6 +71,12 @@ exports[`execute balance endpoint should return success for multiple addresses 1
         "balance": "0.78",
       },
     ],
+  },
+  "meta": {
+    "adapterName": "WEI_ADAPTER",
+    "metrics": {
+      "feedId": "{"addresses":[{"address":"0x103b66487784f6e3b4c5b2aca92758198554c3e1"},{"address":"0x742d35cc6634c0532925a3b844bc454e4438f44e","blockHeight":20540144}]}",
+    },
   },
   "result": "15.40",
   "statusCode": 200,

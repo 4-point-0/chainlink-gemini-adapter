@@ -23,4 +23,11 @@ export const config = new AdapterConfig({
     type: "string",
     default: parsed?.WS_API_ENDPOINT, // remove before deploying to https://github.com/smartcontractkit/external-adapters-js
   },
+  BACKGROUND_EXECUTE_MS: {
+    description:
+      "The amount of time the background execute should sleep before performing the next request",
+    required: true,
+    type: "number",
+    default: parseInt(parsed?.BACKGROUND_EXECUTE_MS ?? "1000"), // remove before deploying to https://github.com/smartcontractkit/external-adapters-js
+  },
 });
