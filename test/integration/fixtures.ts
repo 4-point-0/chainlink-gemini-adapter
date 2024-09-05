@@ -7,7 +7,10 @@ export const mockRpcEndpoint =
 export const mockChainId = process.env.CHAIN_ID || "1";
 
 export const mockWSEndpoint =
-  process.env.WS_API_ENDPOINT || "wss://api.gemini.com/v2/marketdata";
+  process.env.WS_API_ENDPOINT || "wss://mock.api.gemini.com/v2/marketdata";
+
+export const mockBackgroundExecuteMs =
+  process.env.BACKGROUND_EXECUTE_MS || "1000";
 
 export const mockBalances: Record<string, Record<string, any>> = {
   "0x103b66487784f6e3b4c5b2aca92758198554c3e1": {

@@ -1,191 +1,120 @@
-import {
-  Transport,
-  TransportDependencies,
-} from "@chainlink/external-adapter-framework/transports";
-import { BaseEndpointTypes, inputParameters } from "../endpoint/balance";
-import { ethers } from "ethers";
-import { getBalances, makeResponse } from "./utils";
-import {
-  AdapterRequest,
-  AdapterResponse,
-} from "@chainlink/external-adapter-framework/util";
+import { TransportDependencies } from "@chainlink/external-adapter-framework/transports";
 import { ResponseCache } from "@chainlink/external-adapter-framework/cache/response";
-import { AdapterError } from "@chainlink/external-adapter-framework/validation/error";
-import { config } from "../config";
+import {
+  AdapterResponse,
+  sleep,
+} from "@chainlink/external-adapter-framework/util";
+import { SubscriptionTransport } from "@chainlink/external-adapter-framework/transports/abstract/subscription";
 import { EndpointContext } from "@chainlink/external-adapter-framework/adapter";
+import { BaseEndpointTypes, inputParameters } from "../endpoint/balance";
+import { BigNumber, BigNumberish, ethers } from "ethers";
+import { AdapterError } from "@chainlink/external-adapter-framework/validation/error";
 
-interface Result {
-  address: string;
-  balance: string;
-}
-
-export interface ResponseSchema {
-  data: {
-    result: Result[];
-  };
-}
+type RequestParams = typeof inputParameters.validated;
 
 export type BalanceTransportTypes = BaseEndpointTypes & {
   Provider: {
     RequestBody: never;
-    ResponseBody: ResponseSchema;
+    ResponseBody: {
+      data: {
+        result: {
+          address: string;
+          balance: string;
+        }[];
+      };
+    };
   };
 };
 
-interface AddressInfo {
-  address: string;
-  blockHeight?: number;
-}
-
-export class LimitedCapacitySet<T> {
-  private items: T[] = [];
-  private itemSet: Set<T> = new Set();
-  private capacity: number;
-
-  constructor(capacity: number) {
-    this.capacity = capacity;
-  }
-
-  add(item: T): void {
-    if (!this.itemSet.has(item)) {
-      if (this.items.length >= this.capacity) {
-        const oldestItem = this.items.shift();
-        if (oldestItem) this.itemSet.delete(oldestItem);
-      }
-      this.items.push(item);
-      this.itemSet.add(item);
-    }
-  }
-
-  has(item: T): boolean {
-    return this.itemSet.has(item);
-  }
-
-  delete(item: T): void {
-    const index = this.items.indexOf(item);
-    if (index > -1) {
-      this.items.splice(index, 1);
-      this.itemSet.delete(item);
-    }
-  }
-
-  values(): IterableIterator<T> {
-    return this.itemSet.values();
-  }
-}
-
-export class BalanceTransport implements Transport<BalanceTransportTypes> {
+export class BalanceTransport extends SubscriptionTransport<BalanceTransportTypes> {
   name!: string;
   responseCache!: ResponseCache<BalanceTransportTypes>;
   provider!: ethers.providers.JsonRpcProvider;
-  currentRequests = new LimitedCapacitySet<string>(10000); // capacity of this.responseCache.cache is 10000
-  listener: ethers.providers.Listener | null = null;
 
   async initialize(
     dependencies: TransportDependencies<BalanceTransportTypes>,
-    settings: typeof config.settings,
-    _endpointName: string,
+    adapterSettings: BalanceTransportTypes["Settings"],
+    endpointName: string,
     transportName: string
   ): Promise<void> {
-    this.responseCache = dependencies.responseCache;
-    this.name = transportName;
+    await super.initialize(
+      dependencies,
+      adapterSettings,
+      endpointName,
+      transportName
+    );
     this.provider = new ethers.providers.JsonRpcProvider(
-      settings.ETHEREUM_RPC_URL,
-      settings.CHAIN_ID
+      adapterSettings.ETHEREUM_RPC_URL,
+      adapterSettings.CHAIN_ID
     );
   }
 
-  async registerRequest(
-    req: AdapterRequest<typeof inputParameters.validated>,
-    _adapterSettings: BalanceTransportTypes["Settings"]
-  ): Promise<void> {
-    const addresses: typeof inputParameters.validated.addresses =
-      req.requestContext.data.addresses;
-    const requestId = this.getRequestId(addresses);
-    this.currentRequests.add(requestId);
+  async backgroundHandler(
+    context: EndpointContext<BalanceTransportTypes>,
+    entries: RequestParams[]
+  ) {
+    await Promise.all(entries.map(async (param) => this.handleRequest(param)));
+    await sleep(context.adapterSettings.BACKGROUND_EXECUTE_MS);
   }
 
-  private getRequestId(addresses: AddressInfo[]): string {
-    return JSON.stringify(addresses);
-  }
-
-  async backgroundExecute(
-    _context: EndpointContext<BalanceTransportTypes>
-  ): Promise<void> {
-    if (this.listener) return;
-
-    this.listener = async () => {
-      for (const requestId of this.currentRequests.values()) {
-        const addresses: typeof inputParameters.validated.addresses =
-          JSON.parse(requestId);
-        try {
-          const { balances, results } = await getBalances(
-            addresses,
-            this.provider
-          );
-
-          const response = makeResponse(balances, results);
-
-          await this.responseCache.write(this.name, [
-            {
-              params: {
-                addresses: addresses.map((address: any) => ({
-                  address: address.address,
-                  blockHeight: address.blockHeight,
-                })),
-              },
-              response,
-            },
-          ]);
-        } catch (e: any) {
-          console.error(
-            `Error updating balances for request ${requestId}:`,
-            e.message
-          );
-        }
-      }
-    };
-
-    this.provider.on("block", this.listener);
-  }
-
-  async foregroundExecute(
-    req: AdapterRequest<typeof inputParameters.validated>
-  ): Promise<AdapterResponse<BalanceTransportTypes["Response"]>> {
-    const cachedResponse = await this.responseCache.cache.get(
-      req.requestContext.cacheKey
-    );
-
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-
-    const addresses: typeof inputParameters.validated.addresses =
-      req.requestContext.data.addresses;
+  async handleRequest(param: RequestParams) {
+    let response: AdapterResponse<BalanceTransportTypes["Response"]>;
 
     try {
-      const { balances, results } = await getBalances(addresses, this.provider);
-      const response = makeResponse(balances, results);
-      await this.responseCache.write(this.name, [
-        {
-          params: {
-            addresses: addresses.map((address: any) => ({
-              address: address.address,
-              blockHeight: address.blockHeight,
-            })),
-          },
-          response,
-        },
-      ]);
-
-      return response;
+      response = await this._handleRequest(param);
     } catch (error) {
       throw new AdapterError({
         statusCode: 502,
         message: `Error fetching balances: ${(error as Error).message}`,
       });
     }
+    await this.responseCache.write(this.name, [{ params: param, response }]);
   }
+
+  async _handleRequest(
+    param: RequestParams
+  ): Promise<AdapterResponse<BalanceTransportTypes["Response"]>> {
+    const providerDataRequestedUnixMs = Date.now();
+
+    const balances = await Promise.all(
+      param.addresses.map((addr) =>
+        this.provider.getBalance(
+          addr.address.toLowerCase(),
+          addr.blockHeight ?? "latest"
+        )
+      )
+    );
+
+    const results = param.addresses.map((addr, index: number) => ({
+      address: addr.address,
+      balance: this._formatAmount(balances[index]._hex),
+    }));
+    const response: AdapterResponse<BalanceTransportTypes["Response"]> = {
+      result: this._formatAmount(
+        balances.reduce((sum, balance) => sum.add(balance), BigNumber.from(0))
+      ),
+      statusCode: 200,
+      data: { result: results },
+      timestamps: {
+        providerDataRequestedUnixMs,
+        providerDataReceivedUnixMs: Date.now(),
+        providerIndicatedTimeUnixMs: undefined,
+      },
+    };
+    return response;
+  }
+
+  getSubscriptionTtlFromConfig(
+    adapterSettings: BalanceTransportTypes["Settings"]
+  ): number {
+    return adapterSettings.WARMUP_SUBSCRIPTION_TTL;
+  }
+
+  private _formatAmount = (amount: BigNumberish, toFixed = 2) => {
+    return parseFloat(ethers.utils.formatUnits(amount, "ether"))
+      .toFixed(toFixed)
+      .toString();
+  };
 }
 
 export const balanceTransport = new BalanceTransport();

@@ -3,8 +3,12 @@ import {
   setEnvVariables,
 } from "@chainlink/external-adapter-framework/util/testing-utils";
 import * as nock from "nock";
-import { mockRpcEndpoint, mockBalances, mockChainId } from "./fixtures";
-import { LimitedCapacitySet } from "../../src/transport/balance";
+import {
+  mockRpcEndpoint,
+  mockBalances,
+  mockChainId,
+  mockBackgroundExecuteMs,
+} from "./fixtures";
 
 jest.mock("ethers", () => {
   const actualModule = jest.requireActual("ethers");
@@ -18,15 +22,6 @@ jest.mock("ethers", () => {
             getBalance: jest.fn().mockImplementation((address) => {
               return mockBalances[address];
             }),
-            on: jest.fn().mockImplementation((event, listener) => {
-              if (event === "block") {
-                setTimeout(() => listener(), 0);
-              }
-              return {
-                removeListener: jest.fn(),
-              };
-            }),
-            removeListener: jest.fn(),
           };
         },
       },
@@ -40,12 +35,14 @@ describe("execute", () => {
   let oldEnv: NodeJS.ProcessEnv;
   const rpcUrl = mockRpcEndpoint;
   const chainId = mockChainId;
+  const backgroundExecuteMs = mockBackgroundExecuteMs;
 
   beforeAll(async () => {
     oldEnv = JSON.parse(JSON.stringify(process.env));
 
     process.env.ETHEREUM_RPC_URL = rpcUrl;
     process.env.CHAIN_ID = chainId;
+    process.env.BACKGROUND_EXECUTE_MS = backgroundExecuteMs;
 
     const mockDate = new Date("2001-01-01T11:11:11.111Z");
     spy = jest.spyOn(Date, "now").mockReturnValue(mockDate.getTime());
@@ -78,7 +75,7 @@ describe("execute", () => {
       expect(body.data.result[0].balance).toBe("14.61");
       expect(body.result).toBe("14.61");
       expect(response.json()).toMatchSnapshot();
-    }, 20000);
+    });
 
     it("should return success for multiple addresses", async () => {
       const data = {
@@ -152,31 +149,31 @@ describe("execute", () => {
       expect(response.json()).toMatchSnapshot();
     });
 
-    it("should maintain a maximum of 10000 items", () => {
-      const currentRequests = new LimitedCapacitySet<string>(10000);
+    // it("should maintain a maximum of 10000 items", () => {
+    //   const currentRequests = new LimitedCapacitySet<string>(10000);
 
-      const addresses = Array.from({ length: 10100 }, (_, i) => ({
-        address: `0x${i.toString().padStart(40, "0")}`,
-      }));
+    //   const addresses = Array.from({ length: 10100 }, (_, i) => ({
+    //     address: `0x${i.toString().padStart(40, "0")}`,
+    //   }));
 
-      for (const addr of addresses) {
-        const requestId = JSON.stringify([addr]);
-        currentRequests.add(requestId);
-      }
+    //   for (const addr of addresses) {
+    //     const requestId = JSON.stringify([addr]);
+    //     currentRequests.add(requestId);
+    //   }
 
-      expect(Array.from(currentRequests.values()).length).toBe(10000);
+    //   expect(Array.from(currentRequests.values()).length).toBe(10000);
 
-      for (let i = 0; i < 100; i++) {
-        const oldestAddr = `0x${i.toString().padStart(40, "0")}`;
-        const requestId = JSON.stringify([{ address: oldestAddr }]);
-        expect(currentRequests.has(requestId)).toBe(false);
-      }
+    //   for (let i = 0; i < 100; i++) {
+    //     const oldestAddr = `0x${i.toString().padStart(40, "0")}`;
+    //     const requestId = JSON.stringify([{ address: oldestAddr }]);
+    //     expect(currentRequests.has(requestId)).toBe(false);
+    //   }
 
-      for (let i = 100; i < 10100; i++) {
-        const newestAddr = `0x${i.toString().padStart(40, "0")}`;
-        const requestId = JSON.stringify([{ address: newestAddr }]);
-        expect(currentRequests.has(requestId)).toBe(true);
-      }
-    });
+    //   for (let i = 100; i < 10100; i++) {
+    //     const newestAddr = `0x${i.toString().padStart(40, "0")}`;
+    //     const requestId = JSON.stringify([{ address: newestAddr }]);
+    //     expect(currentRequests.has(requestId)).toBe(true);
+    //   }
+    // });
   });
 });
